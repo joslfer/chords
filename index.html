@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jazz Chords · Reading Practice</title>
-<meta name="description" content="Random jazz chord generator for piano practice: read the chord symbol and play it quickly from any root note.">
+<meta name="description" content="Tool for studying Jazz chords.">
 <meta name="theme-color" content="#0A0A0B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -312,7 +312,7 @@ var T=[
 
 var AS={'-2':'♭♭','-1':'♭','0':'','1':'♯','2':'♯♯'};
 var AN={'-2':' double flat','-1':' flat','0':'','1':' sharp','2':' double sharp'};
-var S={auto:true,a:20,b:5}, off={};
+var S={auto:false,a:20,b:20}, off={};
 var last='', cur=null, shown=false;
 var paused=false, sheetOpen=false, elapsed=0, lastT=0, raf=0, fbTimer=0;
 var chordCount=0;
@@ -447,7 +447,7 @@ function pick(){
   // Lógica del contador y fuegos artificiales
   chordCount++;
   $('counter').textContent = chordCount;
-  if(chordCount > 1 && (chordCount & (chordCount - 1)) === 0) {
+  if(chordCount === 100) {
     triggerFireworks();
   }
 }
@@ -512,7 +512,8 @@ function openSheet(){
   sheetOpen=true;
   $('sheet').hidden=false;
   syncTimer();
-  $('close').focus();
+  $('close').focus({preventScroll:true});
+  document.querySelector('.panel').scrollTop=0;
 }
 function closeSheet(){
   sheetOpen=false;
