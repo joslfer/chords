@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Acordes de jazz · práctica de lectura</title>
-<meta name="description" content="Generador aleatorio de acordes de jazz para practicar piano: lee el cifrado americano y tócalo rápido desde cualquier nota.">
+<title>Jazz Chords · Reading Practice</title>
+<meta name="description" content="Random jazz chord generator for piano practice: read the chord symbol and play it quickly from any root note.">
 <meta name="theme-color" content="#0A0A0B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Acordes">
+<meta name="apple-mobile-web-app-title" content="Chords">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap');
+
 :root{
-  --bg:#0A0A0B; --ink:#F4F1EA; --soft:#E2DED4; --muted:#B9B4A9; --line:#4A4A4E; --danger:#FF8A80;
+  --bg:#0A0A0B; --ink:#F4F1EA; --soft:#E2DED4; --muted:#9A958A; --line:#4A4A4E; --danger:#FF8A80;
 }
 *{box-sizing:border-box}
 [hidden]{display:none !important}
@@ -20,7 +22,7 @@ html,body{height:100%}
 html{overscroll-behavior:none; -webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{
   margin:0; background:var(--bg); color:var(--ink);
-  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font:16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
 }
 button{
@@ -36,69 +38,178 @@ button:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 }
 #stage{
   flex:1; display:flex; flex-direction:column; align-items:center; text-align:center;
-  padding-top:calc(env(safe-area-inset-top,0px) + clamp(72px,12vh,140px));
+  padding-top:calc(env(safe-area-inset-top,0px) + clamp(40px,8vh,110px));
+  padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));
   -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; outline:none;
 }
+
 #sym{
   font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-  font-size:clamp(56px,18vw,112px); font-weight:600; line-height:1.1; overflow-wrap:anywhere;
+  font-size:clamp(64px,20vw,128px); font-weight:600; line-height:1.1; overflow-wrap:anywhere;
+  letter-spacing: -0.02em;
 }
+
 #answer{display:none; flex-direction:column; align-items:center; width:100%}
-#answer.on{display:flex}
-#name{font-size:clamp(26px,5.6vw,42px); font-weight:600; line-height:1.3; margin:24px 0 0; max-width:760px}
-#meta{display:flex; flex-wrap:wrap; justify-content:center; gap:8px 40px; margin:18px 0 0; font-size:clamp(26px,5.2vw,38px); line-height:1.3}
-#notes{font-weight:600; color:var(--soft)}
-#formula{color:var(--muted)}
-#why{max-width:680px; text-align:left; font-size:clamp(20px,3.6vw,26px); line-height:1.45; color:var(--muted); margin:28px 0 0}
-#why p{margin:0 0 12px}
+#answer.on{display:flex;}
+
+#name{
+  font-family: "Merriweather", serif;
+  font-size:clamp(22px,4.5vw,34px); font-weight:400; font-style:italic; 
+  line-height:1.3; margin:24px 0 0; max-width:760px; color:var(--soft);
+}
+
+#meta{
+  display:flex; flex-wrap:wrap; justify-content:center; gap:12px 40px; 
+  margin:24px 0 0; font-size:clamp(20px,4vw,28px); line-height:1.3;
+  font-family: "Fira Code", monospace;
+  letter-spacing: 0.03em;
+}
+#notes{font-weight:600; color:var(--ink)}
+#formula{font-weight:400; color:var(--muted)}
+
+#why{
+  max-width:680px; text-align:left; 
+  font-size:clamp(17px,3.2vw,20px); line-height:1.7; 
+  color:var(--muted); margin:36px 0 0;
+  font-weight: 400; font-family: "Merriweather", serif;
+}
+#why p{margin:0 0 16px}
+#why p:last-child{margin-bottom:0}
 
 #bar{
   position:fixed; left:0; right:0; top:env(safe-area-inset-top,0px); height:6px; z-index:10;
-  background:rgba(255,255,255,.1); display:none; pointer-events:none;
+  background:rgba(255,255,255,.05); display:none; pointer-events:none;
 }
 body.auto #bar{display:block}
 #fill{display:block; width:100%; height:100%; background:var(--ink); transform-origin:left center; transform:scaleX(1)}
 #fill.b{background:var(--muted)}
 
-.ctl{
-  position:fixed; z-index:11; display:flex; gap:8px;
-  top:calc(env(safe-area-inset-top,0px) + 14px); right:calc(env(safe-area-inset-right,0px) + 14px);
+button:disabled{opacity:.35; cursor:default}
+
+#setBtn{
+  position:fixed; z-index:11; top:max(16px,env(safe-area-inset-top)); right:max(16px,env(safe-area-inset-right));
+  width:56px; height:56px; padding:0; border:none; background:transparent; color:var(--muted);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition: color 0.2s;
 }
-.ctl button{background:var(--bg); color:var(--muted); min-width:48px}
-#pauseBtn{display:none}
-body.auto #pauseBtn{display:inline-flex; align-items:center; justify-content:center}
+#setBtn:hover{color:var(--ink)}
+#setBtn svg{width:28px; height:28px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round}
+
+#auto-zones{
+  display:none; position:fixed; inset:0; z-index:5;
+}
+body.auto #auto-zones{display:flex}
+.zone{
+  flex:1; display:flex; align-items:flex-end; cursor:pointer;
+  padding:max(32px,env(safe-area-inset-bottom)) max(32px,env(safe-area-inset-right)) max(32px,env(safe-area-inset-bottom)) max(32px,env(safe-area-inset-left));
+  -webkit-tap-highlight-color:transparent;
+}
+#left-zone{justify-content:flex-start}
+#right-zone{justify-content:flex-end}
+
+.zone svg{
+  width:56px; height:56px; fill:currentColor; 
+  opacity:0.25; transition:opacity 0.2s, transform 0.2s; color:var(--muted);
+}
+@media (hover: hover) {
+  .zone:hover svg { opacity: 0.45; }
+}
+.zone:active svg{opacity:0.9; transform:scale(0.95)}
+
+/* Feedback popup con animación ágil y diseño en blanco/negro */
+#feedback{
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.6);
+  background:rgba(20,20,22,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  padding:24px; border-radius:24px; z-index:30; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; 
+  transition: opacity 0.15s ease-out, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  color:var(--ink);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+#feedback svg {
+  width: 64px; height: 64px; fill: currentColor;
+}
+#feedback.show{
+  opacity:1; 
+  transform:translate(-50%,-50%) scale(1);
+}
+
+/* Contador gigante y sutil */
+#counter {
+  position: fixed; z-index: 10; pointer-events: none;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  left: 50%; transform: translateX(-50%);
+  font-family: "Fira Code", monospace; 
+  font-size: clamp(40px, 10vw, 84px);
+  font-weight: 600;
+  color: var(--line); 
+  opacity: 0.35;
+  letter-spacing: 0.02em;
+}
+
+#fw-canvas {
+  position: fixed; inset: 0; z-index: 100; pointer-events: none;
+}
 
 #sheet{position:fixed; inset:0; z-index:20; display:flex; align-items:flex-end; justify-content:center}
-#backdrop{position:absolute; inset:0; background:rgba(0,0,0,.65)}
+#backdrop{position:absolute; inset:0; background:rgba(0,0,0,.7)}
 .panel{
   position:relative; width:100%; max-width:640px; max-height:88vh; max-height:88dvh; overflow:auto;
-  -webkit-overflow-scrolling:touch; background:#161617; border:1px solid var(--line); border-radius:16px 16px 0 0;
-  padding:12px 20px calc(20px + env(safe-area-inset-bottom,0px));
+  -webkit-overflow-scrolling:touch; background:#161617; border:1px solid var(--line); border-radius:20px 20px 0 0;
+  padding:16px 24px calc(24px + env(safe-area-inset-bottom,0px));
 }
 .row{display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:68px; font-size:20px; line-height:1.3}
 .step{display:flex; align-items:center; gap:6px; flex:none}
-.step button{width:52px; height:52px; padding:0; font-size:28px; line-height:1}
-.step output{min-width:64px; text-align:center; font-size:24px; font-weight:600}
-#autoBtn{min-width:132px}
-#autoBtn[aria-checked="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink); font-weight:600}
-.lbl{font-size:20px; margin:16px 0 10px}
-.chips{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 8px}
-.chip{color:var(--muted)}
-.chip[aria-pressed="true"]{border-color:var(--soft); color:var(--ink)}
-#err{font-size:16px; color:var(--danger); min-height:24px}
-.done{width:100%; margin-top:8px; font-weight:600; font-size:20px; min-height:56px}
+.step button{width:52px; height:52px; padding:0; font-size:28px; line-height:1; border-radius:12px}
+.step output{min-width:64px; text-align:center; font-size:22px; font-weight:600; font-variant-numeric: tabular-nums;}
+.lbl{font-size:18px; font-weight:600; color:var(--soft); margin:24px 0 12px; text-transform:uppercase; letter-spacing:0.05em; font-family: -apple-system, sans-serif;}
+.chips{display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; font-family: -apple-system, sans-serif;}
+.chip{color:var(--muted); border-radius:12px}
+.chip[aria-pressed="true"]{border-color:var(--soft); color:var(--ink); background:rgba(255,255,255,0.05)}
+#autoToggle{min-width:84px; text-align:center; font-family: -apple-system, sans-serif;}
+#autoToggle[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink); font-weight:600}
+#err{font-size:16px; color:var(--danger); min-height:24px; font-family: -apple-system, sans-serif;}
+
+/* Footer Créditos */
+.credit {
+  text-align: center; font-size: 15px; color: var(--muted); 
+  margin: 40px 0 20px; font-family: -apple-system, sans-serif;
+}
+.credit a {
+  color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); 
+  padding-bottom: 2px; transition: border-color 0.2s; font-weight: 500;
+}
+.credit a:hover {
+  border-color: var(--ink);
+}
+.done{width:100%; font-weight:600; font-size:20px; min-height:60px; border-radius:14px; background:var(--ink); color:var(--bg); border:none; font-family: -apple-system, sans-serif;}
 </style>
 </head>
 <body>
+<canvas id="fw-canvas" aria-hidden="true"></canvas>
 <div id="bar" aria-hidden="true"><i id="fill"></i></div>
 
-<div class="ctl">
-  <button id="pauseBtn" type="button">Pausa</button>
-  <button id="setBtn" type="button" aria-haspopup="dialog">Ajustes</button>
+<div id="counter">0</div>
+
+<button id="setBtn" type="button" aria-haspopup="dialog" aria-label="Settings">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
+</button>
+
+<div id="auto-zones">
+  <div id="left-zone" class="zone" aria-label="Play/Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
+    <svg id="icon-play" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M8 5v14l11-7z"/></svg>
+  </div>
+  <div id="right-zone" class="zone" aria-label="Skip to next">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm9-12v12h2V6h-2z"/></svg>
+  </div>
 </div>
 
+<div id="feedback" aria-hidden="true"></div>
+
 <div class="wrap" id="wrap">
-  <main id="stage" tabindex="0" aria-live="polite" aria-label="Toca en cualquier lugar para ver la respuesta o pasar al siguiente acorde">
+  <main id="stage" tabindex="0" aria-live="polite" aria-label="Tap anywhere to see the answer or skip to the next chord">
     <div id="sym"></div>
     <div id="answer">
       <div id="name"></div>
@@ -108,100 +219,167 @@ body.auto #pauseBtn{display:inline-flex; align-items:center; justify-content:cen
   </main>
 </div>
 
-<div id="sheet" role="dialog" aria-modal="true" aria-label="Ajustes" hidden>
+<div id="sheet" role="dialog" aria-modal="true" aria-label="Settings" hidden>
   <div id="backdrop"></div>
   <div class="panel">
-    <div class="row">
-      <span>Modo automático</span>
-      <button id="autoBtn" type="button" role="switch" aria-checked="false">Desactivado</button>
+    <div class="row" style="font-family: -apple-system, sans-serif;">
+      <span>Auto mode</span>
+      <button id="autoToggle" class="chip" type="button" aria-pressed="false">Off</button>
     </div>
-    <div class="row">
-      <span>Mostrar la respuesta a los</span>
+    <div class="row" style="font-family: -apple-system, sans-serif;">
+      <span>Show answer after</span>
       <div class="step">
-        <button id="aMinus" type="button" aria-label="Menos segundos para mostrar la respuesta">−</button>
-        <output id="aVal">5 s</output>
-        <button id="aPlus" type="button" aria-label="Más segundos para mostrar la respuesta">+</button>
+        <button id="aMinus" type="button" aria-label="Decrease seconds to show answer">−</button>
+        <output id="aVal">20 s</output>
+        <button id="aPlus" type="button" aria-label="Increase seconds to show answer">+</button>
       </div>
     </div>
-    <div class="row">
-      <span>Pasar al siguiente a los</span>
+    <div class="row" style="font-family: -apple-system, sans-serif;">
+      <span>Skip to next after</span>
       <div class="step">
-        <button id="bMinus" type="button" aria-label="Menos segundos para pasar al siguiente">−</button>
-        <output id="bVal">3 s</output>
-        <button id="bPlus" type="button" aria-label="Más segundos para pasar al siguiente">+</button>
+        <button id="bMinus" type="button" aria-label="Decrease seconds to skip to next">−</button>
+        <output id="bVal">5 s</output>
+        <button id="bPlus" type="button" aria-label="Increase seconds to skip to next">+</button>
       </div>
     </div>
-    <div class="lbl">Tipos de acorde</div>
+    <div class="lbl">Chord types</div>
     <div id="chips" class="chips"></div>
     <div id="err" role="alert"></div>
-    <button id="close" class="done" type="button">Listo</button>
+    
+    <div class="credit">
+      Creado por <a href="https://joslfer.com" target="_blank" rel="noopener">José</a>
+    </div>
+    <button id="close" class="done" type="button">Done</button>
   </div>
 </div>
 
 <script>
 var L=['C','D','E','F','G','A','B'], N=[0,2,4,5,7,9,11];
 var R=[[0,0],[1,-1],[1,0],[2,-1],[2,0],[3,0],[3,1],[4,0],[5,-1],[5,0],[6,-1],[6,0]];
+
 var T=[
-{k:'maj7',s:'maj7',n:'major with a major seventh',f:'1 3 5 7',i:[[0,1],[4,3],[7,5],[11,7]],
- e:['maj7 (también se escribe M7 o Δ7): la séptima es mayor, un semitono por debajo de la octava.','Sin una m, la tercera es mayor y la quinta es justa.']},
-{k:'7',s:'7',n:'dominant seventh (major with a minor seventh)',f:'1 3 5 ♭7',i:[[0,1],[4,3],[7,5],[10,7]],
- e:['Un 7 solo, sin maj ni M delante, significa séptima menor (♭7), un tono por debajo de la octava. Es la séptima que se toca por defecto.','Sin una m, la tercera es mayor. Este acorde se llama dominante.']},
-{k:'m7',s:'m7',n:'minor with a minor seventh',f:'1 ♭3 5 ♭7',i:[[0,1],[3,3],[7,5],[10,7]],
- e:['m minúscula = minor: la tercera es menor (♭3).','Ojo: M mayúscula significa mayor (CM7 = Cmaj7), m minúscula significa menor.','El 7 sin maj ni M es la séptima menor (♭7).']},
-{k:'mM7',s:'m(maj7)',n:'minor with a major seventh',f:'1 ♭3 5 7',i:[[0,1],[3,3],[7,5],[11,7]],
- e:['m = tercera menor (♭3).','maj7 = séptima mayor. Aquí la séptima no es la de por defecto: lo indica el maj.','Se escribe también mM7 o m△7: la m minúscula es la tercera, la M mayúscula es la séptima.']},
-{k:'m7b5',s:'m7♭5',n:'minor with a minor seventh and flat fifth (half-diminished)',f:'1 ♭3 ♭5 ♭7',i:[[0,1],[3,3],[6,5],[10,7]],
- e:['m = tercera menor (♭3). El 7 sin maj es séptima menor (♭7).','♭5 = bajas la quinta un semitono (quinta disminuida).','También se escribe ø7 y se llama semidisminuido.']},
-{k:'dim7',s:'°7',n:'diminished with a diminished seventh',f:'1 ♭3 ♭5 ♭♭7',i:[[0,1],[3,3],[6,5],[9,7]],
- e:['° o dim = disminuido: tercera menor (♭3) y quinta bemol (♭5).','En el °7 la séptima es disminuida (♭♭7): un semitono más baja que la menor. En el piano suena igual que una sexta mayor.']},
-{k:'maj7s5',s:'maj7♯5',n:'major with a major seventh and sharp fifth',f:'1 3 ♯5 7',i:[[0,1],[4,3],[8,5],[11,7]],
- e:['maj7 = séptima mayor.','♯5 = subes la quinta un semitono (quinta aumentada).']},
-{k:'7sus4',s:'7sus4',n:'dominant seventh with a fourth instead of a third',f:'1 4 5 ♭7',i:[[0,1],[5,4],[7,5],[10,7]],
- e:['sus4 = suspendido: se quita la tercera y se pone la cuarta en su lugar.','El 7 sin maj es la séptima menor (♭7).']},
-{k:'6',s:'6',n:'major with a sixth',f:'1 3 5 6',i:[[0,1],[4,3],[7,5],[9,6]],
- e:['6 = sexta mayor añadida al acorde. No lleva séptima.','Sin una m, la tercera es mayor.']},
-{k:'m6',s:'m6',n:'minor with a sixth',f:'1 ♭3 5 6',i:[[0,1],[3,3],[7,5],[9,6]],
- e:['m = tercera menor (♭3).','6 = sexta mayor añadida. No lleva séptima.']},
-{k:'9',s:'9',n:'dominant ninth (minor seventh and ninth)',f:'1 3 5 ♭7 9',i:[[0,1],[4,3],[7,5],[10,7],[14,9]],
- e:['Un 9 solo implica también la séptima menor (♭7), aunque no se escriba.','La novena es la segunda nota de la escala, una octava más arriba.']},
-{k:'maj9',s:'maj9',n:'major with a major seventh and ninth',f:'1 3 5 7 9',i:[[0,1],[4,3],[7,5],[11,7],[14,9]],
- e:['maj9 incluye la séptima mayor y además la novena.','La novena es la segunda nota de la escala, una octava más arriba.']},
-{k:'m9',s:'m9',n:'minor with a minor seventh and ninth',f:'1 ♭3 5 ♭7 9',i:[[0,1],[3,3],[7,5],[10,7],[14,9]],
- e:['m = tercera menor (♭3).','El 9 implica la séptima menor (♭7) y añade la novena (la segunda, una octava arriba).']},
-{k:'7b9',s:'7♭9',n:'dominant seventh with a flat ninth',f:'1 3 5 ♭7 ♭9',i:[[0,1],[4,3],[7,5],[10,7],[13,9]],
- e:['7 = séptima menor (♭7).','♭9 = la novena bajada un semitono: queda a un semitono sobre la fundamental, una octava arriba.']},
-{k:'7s9',s:'7♯9',n:'dominant seventh with a sharp ninth',f:'1 3 5 ♭7 ♯9',i:[[0,1],[4,3],[7,5],[10,7],[15,9]],
- e:['7 = séptima menor (♭7).','♯9 = la novena subida un semitono: suena como una tercera menor una octava arriba, mezclada con la tercera mayor.']},
-{k:'13',s:'13',n:'dominant thirteenth (minor seventh and thirteenth)',f:'1 3 5 ♭7 13',i:[[0,1],[4,3],[7,5],[10,7],[21,13]],
- e:['Un 13 solo implica la séptima menor (♭7) además de la treceava.','La treceava es la sexta, una octava más arriba. La novena y la oncena suelen omitirse.']},
-{k:'7s5',s:'7♯5',n:'dominant seventh with a sharp fifth',f:'1 3 ♯5 ♭7',i:[[0,1],[4,3],[8,5],[10,7]],
- e:['7 = séptima menor (♭7).','♯5 = subes la quinta un semitono (quinta aumentada).']},
-{k:'7b5',s:'7♭5',n:'dominant seventh with a flat fifth',f:'1 3 ♭5 ♭7',i:[[0,1],[4,3],[6,5],[10,7]],
- e:['7 = séptima menor (♭7).','♭5 = bajas la quinta un semitono (quinta disminuida).']}
+{k:'maj7',s:'maj7',n:'Major 7th',f:'1 3 5 7',i:[[0,1],[4,3],[7,5],[11,7]],
+ e:['The "maj7" (also written M7 or Δ) indicates a major seventh, a half-step below the root. Without an "m", the third is major and the fifth is perfect.',
+    'It is a highly stable chord, typically used as the tonic (I) in major keys. In modern voicings, the natural 11th is usually avoided so it doesn\'t clash with the major third.']},
+{k:'7',s:'7',n:'Dominant 7th',f:'1 3 5 ♭7',i:[[0,1],[4,3],[7,5],[10,7]],
+ e:['A lone "7" always means minor seventh (♭7), a whole step below the root. Without an "m", the third is major. This is your default seventh chord.',
+    'Known as the dominant chord (V), its built-in tritone creates a strong tension that naturally wants to resolve down a perfect fifth. In blues, however, it is stable enough to act as the tonic.']},
+{k:'m7',s:'m7',n:'Minor 7th',f:'1 ♭3 5 ♭7',i:[[0,1],[3,3],[7,5],[10,7]],
+ e:['The lowercase "m" means minor third (♭3). The "7" on its own means minor seventh (♭7).',
+    'This is the standard ii chord in a ii-V-I progression. It is incredibly versatile, highly stable, and serves as the foundation for Dorian modal playing.']},
+{k:'mM7',s:'m(maj7)',n:'Minor Major 7th',f:'1 ♭3 5 7',i:[[0,1],[3,3],[7,5],[11,7]],
+ e:['The "m" dictates a minor third (♭3), while the "maj7" explicitly overrides the default seventh, making it major (a half-step below the root).',
+    'Often used as a tonic minor chord (i). It has a distinct "spy movie" dissonance and frequently appears as a passing chord in minor line clichés (moving from m to mM7 to m7).']},
+{k:'m7b5',s:'m7♭5',n:'Half-Diminished 7th',f:'1 ♭3 ♭5 ♭7',i:[[0,1],[3,3],[6,5],[10,7]],
+ e:['The "m" means minor third (♭3), the "7" means minor seventh (♭7), and "♭5" lowers the fifth. Also written as ø7.',
+    'It functions primarily as the ii chord in a minor ii-V-i progression. Unlike fully diminished chords, it lacks the diminished seventh, giving it a more open, floating quality.']},
+{k:'dim7',s:'°7',n:'Fully Diminished 7th',f:'1 ♭3 ♭5 ♭♭7',i:[[0,1],[3,3],[6,5],[9,7]],
+ e:['The "dim" or "°" means minor third (♭3) and flat fifth (♭5). In a diminished chord, the "7" specifically means a diminished seventh (♭♭7), which sounds identical to a major sixth.',
+    'A completely symmetrical chord built entirely of stacked minor thirds. It is heavily used as a passing chord to connect diatonic chords smoothly via half-step motion.']},
+{k:'maj7s5',s:'maj7♯5',n:'Major 7th Sharp 5',f:'1 3 ♯5 7',i:[[0,1],[4,3],[8,5],[11,7]],
+ e:['"maj7" dictates a major seventh, while "♯5" means the fifth is raised a half-step (augmented).',
+    'Commonly used as a substitute for a standard major tonic (derived from melodic minor harmony). It provides a more modern, unresolved, and floating color to a major ending.']},
+{k:'7sus4',s:'7sus4',n:'Dominant 7th Suspended 4th',f:'1 4 5 ♭7',i:[[0,1],[5,4],[7,5],[10,7]],
+ e:['"sus4" means the third is omitted and replaced by a perfect fourth. The "7" implies the standard minor seventh (♭7).',
+    'Used historically to delay the resolution of a dominant chord. In modern post-bop jazz, it frequently acts as a standalone, floating chord that never actually resolves the fourth down to the third.']},
+{k:'6',s:'6',n:'Major 6th',f:'1 3 5 6',i:[[0,1],[4,3],[7,5],[9,6]],
+ e:['The "6" means a major sixth is added to the major triad. It does not contain a seventh.',
+    'Highly stable and consonant. Before the maj7 took over in bebop, the 6 chord was the standard, traditional major tonic chord in swing and early jazz.']},
+{k:'m6',s:'m6',n:'Minor 6th',f:'1 ♭3 5 6',i:[[0,1],[3,3],[7,5],[9,6]],
+ e:['The "m" means minor third (♭3), and the "6" adds a major sixth. It does not contain a seventh.',
+    'The traditional tonic chord for minor keys in jazz. The major sixth gives it a distinctive, slightly bright minor sound, heavily associated with Gypsy jazz and standard minor endings.']},
+{k:'9',s:'9',n:'Dominant 9th',f:'1 3 5 ♭7 9',i:[[0,1],[4,3],[7,5],[10,7],[14,9]],
+ e:['A "9" chord inherently includes the minor seventh (♭7) even though it isn\'t written, plus the major ninth (the 2nd, an octave up). The third is major.',
+    'A warmer, richer extension of the dominant 7th. It functions exactly like a V7 chord but adds a thicker texture and smoother voice-leading options.']},
+{k:'maj9',s:'maj9',n:'Major 9th',f:'1 3 5 7 9',i:[[0,1],[4,3],[7,5],[11,7],[14,9]],
+ e:['"maj9" explicitly includes both the major seventh (7) and the major ninth (9). The third is major.',
+    'A lush, modern extension of the major tonic (I). Very common in ballads and bossa nova, providing a fuller, more complex resolution than a basic maj7.']},
+{k:'m9',s:'m9',n:'Minor 9th',f:'1 ♭3 5 ♭7 9',i:[[0,1],[3,3],[7,5],[10,7],[14,9]],
+ e:['The "m" means minor third (♭3). The "9" implies the minor seventh (♭7) and adds the major ninth (9).',
+    'An extension of the m7 chord. Frequently used for the ii chord in major keys, or as a static, groove-oriented vamp chord in modal jazz and funk.']},
+{k:'7b9',s:'7♭9',n:'Dominant 7th Flat 9',f:'1 3 5 ♭7 ♭9',i:[[0,1],[4,3],[7,5],[10,7],[13,9]],
+ e:['The "7" implies a minor seventh (♭7). The "♭9" means the ninth is lowered by a half-step, sitting a minor ninth above the root.',
+    'The quintessential altered dominant chord for resolving to a minor tonic (V of i). The ♭9 creates strong voice-leading tension that pulls naturally down to the fifth of the target chord.']},
+{k:'7s9',s:'7♯9',n:'Dominant 7th Sharp 9',f:'1 3 5 ♭7 ♯9',i:[[0,1],[4,3],[7,5],[10,7],[15,9]],
+ e:['The "7" implies a minor seventh (♭7). The "♯9" raises the ninth by a half-step, making it sound enharmonically like a minor third clashing against the major third.',
+    'Famously known in rock as the "Hendrix chord," in jazz it provides a gritty, bluesy tension that resolves powerfully to both major and minor chords (often derived from the altered scale).']},
+{k:'13',s:'13',n:'Dominant 13th',f:'1 3 5 ♭7 13',i:[[0,1],[4,3],[7,5],[10,7],[21,13]],
+ e:['A "13" implies the minor seventh (♭7) and adds the major thirteenth (the 6th, an octave up). The 9th is usually played, but the 11th is almost always omitted to avoid clashing with the major third.',
+    'The brightest and most extended dominant chord. It resolves very smoothly to a major tonic because the 13th is the exact same note as the major third of the target I chord.']},
+{k:'7s5',s:'7♯5',n:'Dominant 7th Sharp 5 (Augmented)',f:'1 3 ♯5 ♭7',i:[[0,1],[4,3],[8,5],[10,7]],
+ e:['The "7" implies a minor seventh (♭7). The "♯5" means the fifth is raised a half-step (augmented).',
+    'Creates a strong whole-tone scale flavor. It builds an unstable tension that typically resolves to a chord whose root is a perfect fourth higher (like a V7 going to a Imaj7).']},
+{k:'7b5',s:'7♭5',n:'Dominant 7th Flat 5',f:'1 3 ♭5 ♭7',i:[[0,1],[4,3],[6,5],[10,7]],
+ e:['The "7" implies a minor seventh (♭7). The "♭5" means the fifth is lowered a half-step.',
+    'It contains the exact same core tritone interval (the 3rd and ♭7) as the dominant chord a tritone away. Because of this, it serves as the theoretical foundation for tritone substitution in bebop.']}
 ];
 
 var AS={'-2':'♭♭','-1':'♭','0':'','1':'♯','2':'♯♯'};
 var AN={'-2':' double flat','-1':' flat','0':'','1':' sharp','2':' double sharp'};
-var S={auto:false,a:5,b:3}, off={};
+var S={auto:true,a:20,b:5}, off={};
 var last='', cur=null, shown=false;
-var paused=false, sheetOpen=false, elapsed=0, lastT=0, raf=0;
+var paused=false, sheetOpen=false, elapsed=0, lastT=0, raf=0, fbTimer=0;
+var chordCount=0;
 var wl=null, wlBusy=false;
 var $=function(i){return document.getElementById(i)};
 
+// Motor de partículas (Fuegos artificiales amarillos/blancos)
+var fwCvs = $('fw-canvas'), fwCtx = fwCvs.getContext('2d'), fwParts = [];
+function resizeFw(){ fwCvs.width = window.innerWidth; fwCvs.height = window.innerHeight; }
+window.addEventListener('resize', resizeFw);
+resizeFw();
+function loopFw(){
+  requestAnimationFrame(loopFw);
+  if(fwParts.length === 0){ fwCtx.clearRect(0,0,fwCvs.width,fwCvs.height); return; }
+  fwCtx.clearRect(0,0,fwCvs.width,fwCvs.height);
+  for(var i=fwParts.length-1; i>=0; i--){
+    var p = fwParts[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.a -= p.d;
+    if(p.a <= 0){ fwParts.splice(i,1); continue; }
+    fwCtx.globalAlpha = p.a;
+    fwCtx.fillStyle = p.c;
+    fwCtx.beginPath();
+    fwCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    fwCtx.fill();
+  }
+}
+loopFw();
+function spawnBurst(x, y, isBig){
+  var cols = ['#FFFFFF', '#F4F1EA', '#FFF59D', '#FFD54F', '#FFC107', '#FFE082'];
+  var cnt = isBig ? 60 : 30;
+  for(var i=0; i<cnt; i++){
+    var ang = Math.random()*Math.PI*2;
+    var spd = Math.random()*(isBig ? 6 : 4) + 1.5;
+    fwParts.push({
+      x:x, y:y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd,
+      c: cols[Math.floor(Math.random()*cols.length)],
+      a: 1, d: 0.01 + Math.random()*0.02,
+      r: Math.random()*2 + 1.5
+    });
+  }
+}
+function triggerFireworks(){
+  var w = fwCvs.width, h = fwCvs.height;
+  spawnBurst(w*0.5, h*0.4, true);
+  setTimeout(function(){ spawnBurst(w*0.25, h*0.3, false); }, 250);
+  setTimeout(function(){ spawnBurst(w*0.75, h*0.35, false); }, 500);
+  setTimeout(function(){ spawnBurst(w*0.5, h*0.2, true); }, 800);
+}
+
 function load(){
   try{
-    var j=JSON.parse(localStorage.getItem('acordes.v1')||'null');
+    var j=JSON.parse(localStorage.getItem('acordes.v3')||'null');
     if(!j)return;
     S.auto=!!j.auto;
-    if(j.a>=1&&j.a<=30)S.a=Math.round(j.a);
-    if(j.b>=1&&j.b<=30)S.b=Math.round(j.b);
+    if(j.a>=1&&j.a<=60)S.a=Math.round(j.a);
+    if(j.b>=1&&j.b<=60)S.b=Math.round(j.b);
     (j.off||[]).forEach(function(k){off[k]=true});
     if(T.every(function(t){return off[t.k]}))off={};
   }catch(e){}
 }
 function save(){
   try{
-    localStorage.setItem('acordes.v1',JSON.stringify({auto:S.auto,a:S.a,b:S.b,off:Object.keys(off)}));
+    localStorage.setItem('acordes.v3',JSON.stringify({auto:S.auto,a:S.a,b:S.b,off:Object.keys(off)}));
   }catch(e){}
 }
 
@@ -231,7 +409,7 @@ function hide(){
 function reveal(){
   shown=true; elapsed=0;
   $('name').textContent=nm(cur.r,true)+' '+cur.t.n;
-  $('notes').textContent=cur.notes.map(function(x){return nm(x,false)}).join('  ·  ');
+  $('notes').textContent=cur.notes.map(function(x){return nm(x,false)}).join('  ');
   $('formula').textContent=cur.t.f;
   var w=$('why');
   w.textContent='';
@@ -256,6 +434,13 @@ function pick(){
   cur={r:root,t:t,notes:spell(r,t.i)};
   $('sym').textContent=nm(root,false)+t.s;
   hide();
+  
+  // Lógica del contador y fuegos artificiales
+  chordCount++;
+  $('counter').textContent = chordCount;
+  if(chordCount > 1 && (chordCount & (chordCount - 1)) === 0) {
+    triggerFireworks();
+  }
 }
 function advance(){
   if(shown)pick(); else reveal();
@@ -266,7 +451,7 @@ function tick(t){
   if(!lastT)lastT=t;
   var dt=Math.min((t-lastT)/1000,0.25);
   lastT=t;
-  elapsed+=dt;
+  if(!paused) elapsed+=dt;
   if(elapsed>=(shown?S.b:S.a))advance();
   paintBar();
 }
@@ -285,7 +470,7 @@ function wake(want){
   }catch(e){wlBusy=false}
 }
 function syncTimer(){
-  var run=S.auto&&!paused&&!sheetOpen&&document.visibilityState==='visible';
+  var run=S.auto&&!sheetOpen&&document.visibilityState==='visible';
   if(run){
     if(!raf){lastT=0; raf=requestAnimationFrame(tick)}
   }else if(raf){
@@ -295,11 +480,23 @@ function syncTimer(){
 }
 function paintUI(){
   document.body.classList.toggle('auto',S.auto);
-  $('autoBtn').setAttribute('aria-checked',S.auto?'true':'false');
-  $('autoBtn').textContent=S.auto?'Activado':'Desactivado';
-  $('pauseBtn').textContent=paused?'Seguir':'Pausa';
+  $('autoToggle').setAttribute('aria-pressed',S.auto?'true':'false');
+  $('autoToggle').textContent = S.auto ? 'ON' : 'OFF';
+  $('icon-pause').hidden = paused;
+  $('icon-play').hidden = !paused;
   $('aVal').textContent=S.a+' s';
   $('bVal').textContent=S.b+' s';
+}
+
+function showFeedback(isPaused) {
+  var iconPause = '<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
+  var iconPlay = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  
+  $('feedback').innerHTML = isPaused ? iconPause : iconPlay;
+  $('feedback').classList.add('show');
+  
+  clearTimeout(fbTimer);
+  fbTimer = setTimeout(function(){ $('feedback').classList.remove('show'); }, 400);
 }
 
 function openSheet(){
@@ -316,7 +513,7 @@ function closeSheet(){
   $('setBtn').focus();
 }
 function step(key,d){
-  S[key]=Math.min(30,Math.max(1,S[key]+d));
+  S[key]=Math.min(60,Math.max(1,S[key]+d));
   paintUI(); paintBar(); save();
 }
 
@@ -326,7 +523,7 @@ T.forEach(function(t){
   function paint(){b.setAttribute('aria-pressed',off[t.k]?'false':'true')}
   b.onclick=function(){
     var n=T.filter(function(x){return !off[x.k]}).length;
-    if(!off[t.k]&&n===1){$('err').textContent='Deja al menos un tipo de acorde activo.';return}
+    if(!off[t.k]&&n===1){$('err').textContent='Keep at least one chord type active.';return}
     $('err').textContent='';
     if(off[t.k])delete off[t.k]; else off[t.k]=true;
     paint(); save();
@@ -334,20 +531,35 @@ T.forEach(function(t){
   paint(); $('chips').appendChild(b);
 });
 
-$('wrap').addEventListener('click',function(){
-  syncTimer();
-  advance();
-});
-$('setBtn').onclick=openSheet;
-$('close').onclick=closeSheet;
-$('backdrop').onclick=closeSheet;
-$('autoBtn').onclick=function(){
+$('autoToggle').onclick=function(){
   S.auto=!S.auto; paused=false; elapsed=0;
   paintUI(); paintBar(); save(); syncTimer();
 };
-$('pauseBtn').onclick=function(){
-  paused=!paused; paintUI(); syncTimer();
+
+$('left-zone').onclick=function(e){
+  e.stopPropagation();
+  paused=!paused;
+  paintUI();
+  showFeedback(paused);
 };
+
+$('right-zone').onclick=function(e){
+  e.stopPropagation();
+  advance();
+  elapsed=0; 
+  paintBar();
+};
+
+$('wrap').addEventListener('click',function(){
+  if(S.auto) return;
+  syncTimer();
+  advance();
+});
+
+$('setBtn').onclick=openSheet;
+$('close').onclick=closeSheet;
+$('backdrop').onclick=closeSheet;
+
 $('aMinus').onclick=function(){step('a',-1)};
 $('aPlus').onclick=function(){step('a',1)};
 $('bMinus').onclick=function(){step('b',-1)};
@@ -359,7 +571,9 @@ document.addEventListener('keydown',function(e){
     return;
   }
   if((e.code==='Space'||e.key==='Enter')&&e.target.tagName!=='BUTTON'){
-    e.preventDefault(); advance();
+    e.preventDefault(); 
+    advance(); 
+    if(S.auto){ elapsed=0; paintBar(); }
   }
 });
 document.addEventListener('visibilitychange',syncTimer);
