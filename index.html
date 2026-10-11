@@ -2,142 +2,208 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Acordes de jazz · práctica de lectura</title>
 <meta name="description" content="Generador aleatorio de acordes de jazz para practicar piano: lee el cifrado americano y tócalo rápido desde cualquier nota.">
+<meta name="theme-color" content="#0A0A0B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Acordes">
 <style>
 :root{
-  --bg:#EEF1F4; --card:#FFFFFF; --ink:#14181F; --muted:#5A6472; --line:#D5DAE1;
-  --accent:#3B3FA8; --accent-bg:#E6E7F8; --on-accent:#FFFFFF; --danger:#B3261E;
-}
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg:#11141B; --card:#1A1F2A; --ink:#ECEFF5; --muted:#98A1B3; --line:#2B3242;
-    --accent:#A9B0FF; --accent-bg:#262B4A; --on-accent:#11141B; --danger:#FF8A80;
-  }
+  --bg:#0A0A0B; --ink:#F4F1EA; --soft:#E2DED4; --muted:#B9B4A9; --line:#4A4A4E; --danger:#FF8A80;
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%}
+html{overscroll-behavior:none; -webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{
   margin:0; background:var(--bg); color:var(--ink);
   font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
 }
-main{max-width:560px; margin:0 auto; padding:24px 16px 48px}
-h1{font-size:18px; font-weight:600; margin:0 0 16px}
+button{
+  font:inherit; font-size:18px; cursor:pointer; min-height:48px; padding:0 16px; border-radius:10px;
+  border:1px solid var(--line); background:transparent; color:var(--ink);
+  touch-action:manipulation;
+}
+button:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 
-.card{
-  background:var(--card); border:1px solid var(--line); border-radius:14px;
-  padding:24px 18px; text-align:center;
+.wrap{
+  min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; cursor:pointer;
+  padding:0 max(20px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
 }
-.label{font-size:12px; color:var(--muted); margin:0 0 4px}
+#stage{
+  flex:1; display:flex; flex-direction:column; align-items:center; text-align:center;
+  padding-top:calc(env(safe-area-inset-top,0px) + clamp(72px,12vh,140px));
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; outline:none;
+}
 #sym{
   font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-  font-size:clamp(44px,14vw,72px); font-weight:600; line-height:1.15;
-  min-height:1.2em; overflow-wrap:anywhere;
+  font-size:clamp(56px,18vw,112px); font-weight:600; line-height:1.1; overflow-wrap:anywhere;
 }
-.rule{border:0; border-top:1px solid var(--line); margin:16px 0}
-#name{font-size:19px; font-weight:600; line-height:1.35; min-height:52px}
-#formula{font-size:14px; color:var(--muted); margin:6px 0 0; min-height:21px}
-#notes{font-size:17px; font-weight:600; color:var(--accent); min-height:26px}
-#why{text-align:left; font-size:14px; line-height:1.5; color:var(--muted)}
-#why.open{border-top:1px solid var(--line); margin-top:16px; padding-top:12px}
-#why .h{font-size:12px; margin:0 0 4px}
-#why p{margin:0 0 6px}
+#answer{display:none; flex-direction:column; align-items:center; width:100%}
+#answer.on{display:flex}
+#name{font-size:clamp(26px,5.6vw,42px); font-weight:600; line-height:1.3; margin:24px 0 0; max-width:760px}
+#meta{display:flex; flex-wrap:wrap; justify-content:center; gap:8px 40px; margin:18px 0 0; font-size:clamp(26px,5.2vw,38px); line-height:1.3}
+#notes{font-weight:600; color:var(--soft)}
+#formula{color:var(--muted)}
+#why{max-width:680px; text-align:left; font-size:clamp(20px,3.6vw,26px); line-height:1.45; color:var(--muted); margin:28px 0 0}
+#why p{margin:0 0 12px}
 
-.actions{display:flex; gap:8px; margin:12px 0 28px}
-button{
-  font:inherit; cursor:pointer; min-height:48px; padding:0 16px; border-radius:10px;
-  border:1px solid var(--line); background:var(--card); color:var(--ink);
+#bar{
+  position:fixed; left:0; right:0; top:env(safe-area-inset-top,0px); height:6px; z-index:10;
+  background:rgba(255,255,255,.1); display:none; pointer-events:none;
 }
-button:hover{border-color:var(--muted)}
-button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-.actions button{flex:1}
-.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600; font-size:17px}
-.primary:hover{border-color:var(--accent); filter:brightness(1.08)}
+body.auto #bar{display:block}
+#fill{display:block; width:100%; height:100%; background:var(--ink); transform-origin:left center; transform:scaleX(1)}
+#fill.b{background:var(--muted)}
 
-h2{font-size:13px; font-weight:500; color:var(--muted); margin:0 0 8px}
-.chips{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 16px}
-.chip{min-height:36px; padding:0 12px; font-size:14px}
-.chip[aria-pressed="true"]{background:var(--accent-bg); color:var(--accent); border-color:var(--accent)}
-.chip[aria-pressed="false"]{color:var(--muted)}
-#err{font-size:13px; color:var(--danger); min-height:20px}
+.ctl{
+  position:fixed; z-index:11; display:flex; gap:8px;
+  top:calc(env(safe-area-inset-top,0px) + 14px); right:calc(env(safe-area-inset-right,0px) + 14px);
+}
+.ctl button{background:var(--bg); color:var(--muted); min-width:48px}
+#pauseBtn{display:none}
+body.auto #pauseBtn{display:inline-flex; align-items:center; justify-content:center}
+
+#sheet{position:fixed; inset:0; z-index:20; display:flex; align-items:flex-end; justify-content:center}
+#backdrop{position:absolute; inset:0; background:rgba(0,0,0,.65)}
+.panel{
+  position:relative; width:100%; max-width:640px; max-height:88vh; max-height:88dvh; overflow:auto;
+  -webkit-overflow-scrolling:touch; background:#161617; border:1px solid var(--line); border-radius:16px 16px 0 0;
+  padding:12px 20px calc(20px + env(safe-area-inset-bottom,0px));
+}
+.row{display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:68px; font-size:20px; line-height:1.3}
+.step{display:flex; align-items:center; gap:6px; flex:none}
+.step button{width:52px; height:52px; padding:0; font-size:28px; line-height:1}
+.step output{min-width:64px; text-align:center; font-size:24px; font-weight:600}
+#autoBtn{min-width:132px}
+#autoBtn[aria-checked="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink); font-weight:600}
+.lbl{font-size:20px; margin:16px 0 10px}
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 8px}
+.chip{color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--soft); color:var(--ink)}
+#err{font-size:16px; color:var(--danger); min-height:24px}
+.done{width:100%; margin-top:8px; font-weight:600; font-size:20px; min-height:56px}
 </style>
 </head>
 <body>
-<main>
-  <h1>Acordes de jazz</h1>
+<div id="bar" aria-hidden="true"><i id="fill"></i></div>
 
-  <section class="card" aria-live="polite">
-    <p class="label">Cifrado</p>
+<div class="ctl">
+  <button id="pauseBtn" type="button">Pausa</button>
+  <button id="setBtn" type="button" aria-haspopup="dialog">Ajustes</button>
+</div>
+
+<div class="wrap" id="wrap">
+  <main id="stage" tabindex="0" aria-live="polite" aria-label="Toca en cualquier lugar para ver la respuesta o pasar al siguiente acorde">
     <div id="sym"></div>
-    <hr class="rule">
-    <p class="label">En palabras (inglés)</p>
-    <div id="name"></div>
-    <div id="formula"></div>
-    <hr class="rule">
-    <p class="label">Notas</p>
-    <div id="notes"></div>
-    <div id="why"></div>
-  </section>
+    <div id="answer">
+      <div id="name"></div>
+      <div id="meta"><span id="notes"></span><span id="formula"></span></div>
+      <div id="why"></div>
+    </div>
+  </main>
+</div>
 
-  <div class="actions">
-    <button id="rnd" class="primary" type="button">Random</button>
-    <button id="tog" type="button">Ver respuesta</button>
+<div id="sheet" role="dialog" aria-modal="true" aria-label="Ajustes" hidden>
+  <div id="backdrop"></div>
+  <div class="panel">
+    <div class="row">
+      <span>Modo automático</span>
+      <button id="autoBtn" type="button" role="switch" aria-checked="false">Desactivado</button>
+    </div>
+    <div class="row">
+      <span>Mostrar la respuesta a los</span>
+      <div class="step">
+        <button id="aMinus" type="button" aria-label="Menos segundos para mostrar la respuesta">−</button>
+        <output id="aVal">5 s</output>
+        <button id="aPlus" type="button" aria-label="Más segundos para mostrar la respuesta">+</button>
+      </div>
+    </div>
+    <div class="row">
+      <span>Pasar al siguiente a los</span>
+      <div class="step">
+        <button id="bMinus" type="button" aria-label="Menos segundos para pasar al siguiente">−</button>
+        <output id="bVal">3 s</output>
+        <button id="bPlus" type="button" aria-label="Más segundos para pasar al siguiente">+</button>
+      </div>
+    </div>
+    <div class="lbl">Tipos de acorde</div>
+    <div id="chips" class="chips"></div>
+    <div id="err" role="alert"></div>
+    <button id="close" class="done" type="button">Listo</button>
   </div>
-
-  <h2>Básicos</h2>
-  <div id="c1" class="chips"></div>
-  <h2>Extras</h2>
-  <div id="c2" class="chips"></div>
-  <div id="err" role="alert"></div>
-</main>
+</div>
 
 <script>
 var L=['C','D','E','F','G','A','B'], N=[0,2,4,5,7,9,11];
 var R=[[0,0],[1,-1],[1,0],[2,-1],[2,0],[3,0],[3,1],[4,0],[5,-1],[5,0],[6,-1],[6,0]];
 var T=[
-{k:'maj7',s:'maj7',n:'major with a major seventh',f:'1 3 5 7',i:[[0,1],[4,3],[7,5],[11,7]],g:1,
+{k:'maj7',s:'maj7',n:'major with a major seventh',f:'1 3 5 7',i:[[0,1],[4,3],[7,5],[11,7]],
  e:['maj7 (también se escribe M7 o Δ7): la séptima es mayor, un semitono por debajo de la octava.','Sin una m, la tercera es mayor y la quinta es justa.']},
-{k:'7',s:'7',n:'dominant seventh (major with a minor seventh)',f:'1 3 5 ♭7',i:[[0,1],[4,3],[7,5],[10,7]],g:1,
+{k:'7',s:'7',n:'dominant seventh (major with a minor seventh)',f:'1 3 5 ♭7',i:[[0,1],[4,3],[7,5],[10,7]],
  e:['Un 7 solo, sin maj ni M delante, significa séptima menor (♭7), un tono por debajo de la octava. Es la séptima que se toca por defecto.','Sin una m, la tercera es mayor. Este acorde se llama dominante.']},
-{k:'m7',s:'m7',n:'minor with a minor seventh',f:'1 ♭3 5 ♭7',i:[[0,1],[3,3],[7,5],[10,7]],g:1,
+{k:'m7',s:'m7',n:'minor with a minor seventh',f:'1 ♭3 5 ♭7',i:[[0,1],[3,3],[7,5],[10,7]],
  e:['m minúscula = minor: la tercera es menor (♭3).','Ojo: M mayúscula significa mayor (CM7 = Cmaj7), m minúscula significa menor.','El 7 sin maj ni M es la séptima menor (♭7).']},
-{k:'mM7',s:'m(maj7)',n:'minor with a major seventh',f:'1 ♭3 5 7',i:[[0,1],[3,3],[7,5],[11,7]],g:1,
+{k:'mM7',s:'m(maj7)',n:'minor with a major seventh',f:'1 ♭3 5 7',i:[[0,1],[3,3],[7,5],[11,7]],
  e:['m = tercera menor (♭3).','maj7 = séptima mayor. Aquí la séptima no es la de por defecto: lo indica el maj.','Se escribe también mM7 o m△7: la m minúscula es la tercera, la M mayúscula es la séptima.']},
-{k:'m7b5',s:'m7♭5',n:'minor with a minor seventh and flat fifth (half-diminished)',f:'1 ♭3 ♭5 ♭7',i:[[0,1],[3,3],[6,5],[10,7]],g:1,
+{k:'m7b5',s:'m7♭5',n:'minor with a minor seventh and flat fifth (half-diminished)',f:'1 ♭3 ♭5 ♭7',i:[[0,1],[3,3],[6,5],[10,7]],
  e:['m = tercera menor (♭3). El 7 sin maj es séptima menor (♭7).','♭5 = bajas la quinta un semitono (quinta disminuida).','También se escribe ø7 y se llama semidisminuido.']},
-{k:'dim7',s:'°7',n:'diminished with a diminished seventh',f:'1 ♭3 ♭5 ♭♭7',i:[[0,1],[3,3],[6,5],[9,7]],g:1,
+{k:'dim7',s:'°7',n:'diminished with a diminished seventh',f:'1 ♭3 ♭5 ♭♭7',i:[[0,1],[3,3],[6,5],[9,7]],
  e:['° o dim = disminuido: tercera menor (♭3) y quinta bemol (♭5).','En el °7 la séptima es disminuida (♭♭7): un semitono más baja que la menor. En el piano suena igual que una sexta mayor.']},
-{k:'maj7s5',s:'maj7♯5',n:'major with a major seventh and sharp fifth',f:'1 3 ♯5 7',i:[[0,1],[4,3],[8,5],[11,7]],g:2,
+{k:'maj7s5',s:'maj7♯5',n:'major with a major seventh and sharp fifth',f:'1 3 ♯5 7',i:[[0,1],[4,3],[8,5],[11,7]],
  e:['maj7 = séptima mayor.','♯5 = subes la quinta un semitono (quinta aumentada).']},
-{k:'7sus4',s:'7sus4',n:'dominant seventh with a fourth instead of a third',f:'1 4 5 ♭7',i:[[0,1],[5,4],[7,5],[10,7]],g:2,
+{k:'7sus4',s:'7sus4',n:'dominant seventh with a fourth instead of a third',f:'1 4 5 ♭7',i:[[0,1],[5,4],[7,5],[10,7]],
  e:['sus4 = suspendido: se quita la tercera y se pone la cuarta en su lugar.','El 7 sin maj es la séptima menor (♭7).']},
-{k:'6',s:'6',n:'major with a sixth',f:'1 3 5 6',i:[[0,1],[4,3],[7,5],[9,6]],g:2,
+{k:'6',s:'6',n:'major with a sixth',f:'1 3 5 6',i:[[0,1],[4,3],[7,5],[9,6]],
  e:['6 = sexta mayor añadida al acorde. No lleva séptima.','Sin una m, la tercera es mayor.']},
-{k:'m6',s:'m6',n:'minor with a sixth',f:'1 ♭3 5 6',i:[[0,1],[3,3],[7,5],[9,6]],g:2,
+{k:'m6',s:'m6',n:'minor with a sixth',f:'1 ♭3 5 6',i:[[0,1],[3,3],[7,5],[9,6]],
  e:['m = tercera menor (♭3).','6 = sexta mayor añadida. No lleva séptima.']},
-{k:'9',s:'9',n:'dominant ninth (minor seventh and ninth)',f:'1 3 5 ♭7 9',i:[[0,1],[4,3],[7,5],[10,7],[14,9]],g:2,
+{k:'9',s:'9',n:'dominant ninth (minor seventh and ninth)',f:'1 3 5 ♭7 9',i:[[0,1],[4,3],[7,5],[10,7],[14,9]],
  e:['Un 9 solo implica también la séptima menor (♭7), aunque no se escriba.','La novena es la segunda nota de la escala, una octava más arriba.']},
-{k:'maj9',s:'maj9',n:'major with a major seventh and ninth',f:'1 3 5 7 9',i:[[0,1],[4,3],[7,5],[11,7],[14,9]],g:2,
+{k:'maj9',s:'maj9',n:'major with a major seventh and ninth',f:'1 3 5 7 9',i:[[0,1],[4,3],[7,5],[11,7],[14,9]],
  e:['maj9 incluye la séptima mayor y además la novena.','La novena es la segunda nota de la escala, una octava más arriba.']},
-{k:'m9',s:'m9',n:'minor with a minor seventh and ninth',f:'1 ♭3 5 ♭7 9',i:[[0,1],[3,3],[7,5],[10,7],[14,9]],g:2,
+{k:'m9',s:'m9',n:'minor with a minor seventh and ninth',f:'1 ♭3 5 ♭7 9',i:[[0,1],[3,3],[7,5],[10,7],[14,9]],
  e:['m = tercera menor (♭3).','El 9 implica la séptima menor (♭7) y añade la novena (la segunda, una octava arriba).']},
-{k:'7b9',s:'7♭9',n:'dominant seventh with a flat ninth',f:'1 3 5 ♭7 ♭9',i:[[0,1],[4,3],[7,5],[10,7],[13,9]],g:2,
+{k:'7b9',s:'7♭9',n:'dominant seventh with a flat ninth',f:'1 3 5 ♭7 ♭9',i:[[0,1],[4,3],[7,5],[10,7],[13,9]],
  e:['7 = séptima menor (♭7).','♭9 = la novena bajada un semitono: queda a un semitono sobre la fundamental, una octava arriba.']},
-{k:'7s9',s:'7♯9',n:'dominant seventh with a sharp ninth',f:'1 3 5 ♭7 ♯9',i:[[0,1],[4,3],[7,5],[10,7],[15,9]],g:2,
+{k:'7s9',s:'7♯9',n:'dominant seventh with a sharp ninth',f:'1 3 5 ♭7 ♯9',i:[[0,1],[4,3],[7,5],[10,7],[15,9]],
  e:['7 = séptima menor (♭7).','♯9 = la novena subida un semitono: suena como una tercera menor una octava arriba, mezclada con la tercera mayor.']},
-{k:'13',s:'13',n:'dominant thirteenth (minor seventh and thirteenth)',f:'1 3 5 ♭7 13',i:[[0,1],[4,3],[7,5],[10,7],[21,13]],g:2,
+{k:'13',s:'13',n:'dominant thirteenth (minor seventh and thirteenth)',f:'1 3 5 ♭7 13',i:[[0,1],[4,3],[7,5],[10,7],[21,13]],
  e:['Un 13 solo implica la séptima menor (♭7) además de la treceava.','La treceava es la sexta, una octava más arriba. La novena y la oncena suelen omitirse.']},
-{k:'7s5',s:'7♯5',n:'dominant seventh with a sharp fifth',f:'1 3 ♯5 ♭7',i:[[0,1],[4,3],[8,5],[10,7]],g:2,
+{k:'7s5',s:'7♯5',n:'dominant seventh with a sharp fifth',f:'1 3 ♯5 ♭7',i:[[0,1],[4,3],[8,5],[10,7]],
  e:['7 = séptima menor (♭7).','♯5 = subes la quinta un semitono (quinta aumentada).']},
-{k:'7b5',s:'7♭5',n:'dominant seventh with a flat fifth',f:'1 3 ♭5 ♭7',i:[[0,1],[4,3],[6,5],[10,7]],g:2,
+{k:'7b5',s:'7♭5',n:'dominant seventh with a flat fifth',f:'1 3 ♭5 ♭7',i:[[0,1],[4,3],[6,5],[10,7]],
  e:['7 = séptima menor (♭7).','♭5 = bajas la quinta un semitono (quinta disminuida).']}
 ];
 
-var on={}; T.forEach(function(t){on[t.k]=true});
 var AS={'-2':'♭♭','-1':'♭','0':'','1':'♯','2':'♯♯'};
 var AN={'-2':' double flat','-1':' flat','0':'','1':' sharp','2':' double sharp'};
+var S={auto:false,a:5,b:3}, off={};
 var last='', cur=null, shown=false;
+var paused=false, sheetOpen=false, elapsed=0, lastT=0, raf=0;
+var wl=null, wlBusy=false;
 var $=function(i){return document.getElementById(i)};
+
+function load(){
+  try{
+    var j=JSON.parse(localStorage.getItem('acordes.v1')||'null');
+    if(!j)return;
+    S.auto=!!j.auto;
+    if(j.a>=1&&j.a<=30)S.a=Math.round(j.a);
+    if(j.b>=1&&j.b<=30)S.b=Math.round(j.b);
+    (j.off||[]).forEach(function(k){off[k]=true});
+    if(T.every(function(t){return off[t.k]}))off={};
+  }catch(e){}
+}
+function save(){
+  try{
+    localStorage.setItem('acordes.v1',JSON.stringify({auto:S.auto,a:S.a,b:S.b,off:Object.keys(off)}));
+  }catch(e){}
+}
 
 function spell(r,iv){
   var rpc=(N[r[0]]+r[1]+12)%12;
@@ -149,27 +215,36 @@ function spell(r,iv){
 }
 function nm(x,words){return L[x.l]+(words?(AN[x.a]||''):(AS[x.a]||''))}
 
-function clearWhy(){
-  var w=$('why');
-  w.textContent='';
-  w.classList.remove('open');
+function paintBar(){
+  var D=shown?S.b:S.a;
+  var f=Math.max(0,1-elapsed/D);
+  $('fill').style.transform='scaleX('+f+')';
+  $('fill').className=shown?'b':'';
 }
-function fillWhy(t){
+function hide(){
+  shown=false; elapsed=0;
+  $('answer').classList.remove('on');
+  $('name').textContent=''; $('notes').textContent=''; $('formula').textContent='';
+  $('why').textContent='';
+  paintBar();
+}
+function reveal(){
+  shown=true; elapsed=0;
+  $('name').textContent=nm(cur.r,true)+' '+cur.t.n;
+  $('notes').textContent=cur.notes.map(function(x){return nm(x,false)}).join('  ·  ');
+  $('formula').textContent=cur.t.f;
   var w=$('why');
   w.textContent='';
-  w.classList.add('open');
-  var h=document.createElement('div');
-  h.className='h'; h.textContent='Por qué';
-  w.appendChild(h);
-  t.e.forEach(function(line){
+  cur.t.e.forEach(function(line){
     var p=document.createElement('p');
     p.textContent=line;
     w.appendChild(p);
   });
+  $('answer').classList.add('on');
+  paintBar();
 }
-
 function pick(){
-  var act=T.filter(function(t){return on[t.k]});
+  var act=T.filter(function(t){return !off[t.k]});
   var c,tries=0,r,t;
   do{
     r=R[Math.floor(Math.random()*R.length)];
@@ -180,39 +255,119 @@ function pick(){
   var root={l:r[0],a:r[1]};
   cur={r:root,t:t,notes:spell(r,t.i)};
   $('sym').textContent=nm(root,false)+t.s;
-  shown=false;
-  $('name').textContent=''; $('formula').textContent=''; $('notes').textContent='';
-  clearWhy();
-  $('tog').textContent='Ver respuesta';
+  hide();
 }
-function toggle(){
-  if(!cur)return;
-  shown=!shown;
-  $('tog').textContent=shown?'Ocultar respuesta':'Ver respuesta';
-  $('name').textContent=shown?nm(cur.r,true)+' '+cur.t.n:'';
-  $('formula').textContent=shown?'Fórmula: '+cur.t.f:'';
-  $('notes').textContent=shown?cur.notes.map(function(x){return nm(x,false)}).join('  ·  '):'';
-  if(shown)fillWhy(cur.t); else clearWhy();
+function advance(){
+  if(shown)pick(); else reveal();
 }
-function chip(t,box){
+
+function tick(t){
+  raf=requestAnimationFrame(tick);
+  if(!lastT)lastT=t;
+  var dt=Math.min((t-lastT)/1000,0.25);
+  lastT=t;
+  elapsed+=dt;
+  if(elapsed>=(shown?S.b:S.a))advance();
+  paintBar();
+}
+function wake(want){
+  try{
+    if(!('wakeLock' in navigator))return;
+    if(want&&!wl&&!wlBusy){
+      wlBusy=true;
+      navigator.wakeLock.request('screen').then(function(l){
+        wl=l; wlBusy=false;
+        l.addEventListener('release',function(){wl=null});
+      }).catch(function(){wlBusy=false});
+    }else if(!want&&wl){
+      wl.release(); wl=null;
+    }
+  }catch(e){wlBusy=false}
+}
+function syncTimer(){
+  var run=S.auto&&!paused&&!sheetOpen&&document.visibilityState==='visible';
+  if(run){
+    if(!raf){lastT=0; raf=requestAnimationFrame(tick)}
+  }else if(raf){
+    cancelAnimationFrame(raf); raf=0;
+  }
+  wake(S.auto&&document.visibilityState==='visible');
+}
+function paintUI(){
+  document.body.classList.toggle('auto',S.auto);
+  $('autoBtn').setAttribute('aria-checked',S.auto?'true':'false');
+  $('autoBtn').textContent=S.auto?'Activado':'Desactivado';
+  $('pauseBtn').textContent=paused?'Seguir':'Pausa';
+  $('aVal').textContent=S.a+' s';
+  $('bVal').textContent=S.b+' s';
+}
+
+function openSheet(){
+  sheetOpen=true;
+  $('sheet').hidden=false;
+  syncTimer();
+  $('close').focus();
+}
+function closeSheet(){
+  sheetOpen=false;
+  $('sheet').hidden=true;
+  save();
+  syncTimer();
+  $('setBtn').focus();
+}
+function step(key,d){
+  S[key]=Math.min(30,Math.max(1,S[key]+d));
+  paintUI(); paintBar(); save();
+}
+
+T.forEach(function(t){
   var b=document.createElement('button');
   b.type='button'; b.className='chip'; b.textContent=t.s;
-  function paint(){b.setAttribute('aria-pressed',on[t.k]?'true':'false')}
+  function paint(){b.setAttribute('aria-pressed',off[t.k]?'false':'true')}
   b.onclick=function(){
-    var n=T.filter(function(x){return on[x.k]}).length;
-    if(on[t.k]&&n===1){$('err').textContent='Deja al menos un tipo de acorde activo.';return}
+    var n=T.filter(function(x){return !off[x.k]}).length;
+    if(!off[t.k]&&n===1){$('err').textContent='Deja al menos un tipo de acorde activo.';return}
     $('err').textContent='';
-    on[t.k]=!on[t.k]; paint();
+    if(off[t.k])delete off[t.k]; else off[t.k]=true;
+    paint(); save();
   };
-  paint(); box.appendChild(b);
-}
-T.forEach(function(t){chip(t,t.g===1?$('c1'):$('c2'))});
-$('rnd').onclick=pick;
-$('tog').onclick=toggle;
-document.addEventListener('keydown',function(e){
-  if(e.code==='Space'&&e.target.tagName!=='BUTTON'){e.preventDefault();pick()}
+  paint(); $('chips').appendChild(b);
 });
+
+$('wrap').addEventListener('click',function(){
+  syncTimer();
+  advance();
+});
+$('setBtn').onclick=openSheet;
+$('close').onclick=closeSheet;
+$('backdrop').onclick=closeSheet;
+$('autoBtn').onclick=function(){
+  S.auto=!S.auto; paused=false; elapsed=0;
+  paintUI(); paintBar(); save(); syncTimer();
+};
+$('pauseBtn').onclick=function(){
+  paused=!paused; paintUI(); syncTimer();
+};
+$('aMinus').onclick=function(){step('a',-1)};
+$('aPlus').onclick=function(){step('a',1)};
+$('bMinus').onclick=function(){step('b',-1)};
+$('bPlus').onclick=function(){step('b',1)};
+
+document.addEventListener('keydown',function(e){
+  if(sheetOpen){
+    if(e.key==='Escape')closeSheet();
+    return;
+  }
+  if((e.code==='Space'||e.key==='Enter')&&e.target.tagName!=='BUTTON'){
+    e.preventDefault(); advance();
+  }
+});
+document.addEventListener('visibilitychange',syncTimer);
+
+load();
+paintUI();
 pick();
+syncTimer();
 </script>
 </body>
 </html>
