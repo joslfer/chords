@@ -120,19 +120,6 @@ body.auto #auto-zones{display:flex}
 }
 .zone:active svg{opacity:0.9; transform:scale(0.95)}
 
-#feedback{
-  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.6);
-  background:rgba(20,20,22,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-  padding:24px; border-radius:24px; z-index:30; pointer-events:none;
-  display:flex; align-items:center; justify-content:center;
-  opacity:0; 
-  transition: opacity 0.15s ease-out, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  color:var(--ink);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-}
-#feedback svg { width: 64px; height: 64px; fill: currentColor; }
-#feedback.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
-
 #counter {
   position: fixed; z-index: 10; pointer-events: none;
   bottom: max(24px, env(safe-area-inset-bottom));
@@ -196,8 +183,6 @@ body.auto #auto-zones{display:flex}
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm9-12v12h2V6h-2z"/></svg>
   </div>
 </div>
-
-<div id="feedback" aria-hidden="true"></div>
 
 <div class="wrap" id="wrap">
   <main id="stage" tabindex="0" aria-live="polite" aria-label="Tap anywhere to see the answer or skip to the next chord">
@@ -491,17 +476,6 @@ function paintUI(){
   $('bVal').textContent=S.b+' s';
 }
 
-function showFeedback(isPaused) {
-  var iconPause = '<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
-  var iconPlay = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-  
-  $('feedback').innerHTML = isPaused ? iconPause : iconPlay;
-  $('feedback').classList.add('show');
-  
-  clearTimeout(fbTimer);
-  fbTimer = setTimeout(function(){ $('feedback').classList.remove('show'); }, 400);
-}
-
 function openSheet(){
   sheetOpen=true;
   $('sheet').hidden=false;
@@ -544,7 +518,6 @@ $('left-zone').onclick=function(e){
   e.stopPropagation();
   paused=!paused;
   paintUI();
-  showFeedback(paused);
 };
 
 $('right-zone').onclick=function(e){
