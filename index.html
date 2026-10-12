@@ -41,16 +41,12 @@ button:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 }
 #stage{
   flex:1; display:flex; flex-direction:column; align-items:center; 
-  /* flex-start ancla el contenido arriba para que no salte al aparecer la explicación */
   justify-content:flex-start; text-align:center;
-  /* Margen superior fijo adaptativo */
   padding-top:calc(env(safe-area-inset-top,0px) + clamp(40px, 10vh, 120px));
-  /* Protegemos los 100px inferiores para que nunca pise el contador ni los controles */
   padding-bottom:calc(100px + env(safe-area-inset-bottom,0px));
   width:100%;
 }
 
-/* Acorde forzado a una línea */
 #sym{
   font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   font-size:clamp(48px,15vw,128px); font-weight:600; line-height:1.1;
@@ -60,7 +56,6 @@ button:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 #answer{display:none; flex-direction:column; align-items:center; width:100%}
 #answer.on{display:flex;}
 
-/* Los textos se adaptan dinámicamente a la altura disponible (vh/vmin) */
 #name{
   font-family: "Merriweather", serif;
   font-size:clamp(18px,4vmin,34px); font-weight:400; font-style:italic; 
@@ -180,7 +175,6 @@ body.auto #auto-zones{display:flex}
   padding-bottom: 2px; transition: border-color 0.2s; font-weight: 500;
 }
 .credit a:hover { border-color: var(--ink); }
-.done{width:100%; font-weight:600; font-size:20px; min-height:60px; border-radius:14px; background:var(--ink); color:var(--bg); border:none; font-family: -apple-system, sans-serif;}
 </style>
 </head>
 <body>
@@ -244,9 +238,8 @@ body.auto #auto-zones{display:flex}
     <div id="err" role="alert"></div>
     
     <div class="credit">
-      Made by <a href="https://joslfer.com" target="_blank" rel="noopener">José</a>
+      Visit my website <a href="https://joslfer.com" target="_blank" rel="noopener">joslfer.com</a>
     </div>
-    <button id="close" class="done" type="button">Done</button>
   </div>
 </div>
 
@@ -448,7 +441,7 @@ function pick(){
   // Lógica del contador y fuegos artificiales
   chordCount++;
   $('counter').textContent = chordCount;
-  if(chordCount === 100) {
+  if(chordCount > 0 && chordCount % 10 === 0) {
     triggerFireworks();
   }
 }
@@ -513,7 +506,7 @@ function openSheet(){
   sheetOpen=true;
   $('sheet').hidden=false;
   syncTimer();
-  $('close').focus({preventScroll:true});
+  $('autoToggle').focus({preventScroll:true});
   document.querySelector('.panel').scrollTop=0;
 }
 function closeSheet(){
@@ -556,7 +549,11 @@ $('left-zone').onclick=function(e){
 
 $('right-zone').onclick=function(e){
   e.stopPropagation();
-  advance();
+  if (paused) {
+    paused = false;
+    paintUI();
+  }
+  advance(); // Avanza al siguiente estado (explicación o nuevo acorde) de forma normal
   elapsed=0; 
   paintBar();
 };
@@ -568,7 +565,6 @@ $('wrap').addEventListener('click',function(){
 });
 
 $('setBtn').onclick=openSheet;
-$('close').onclick=closeSheet;
 $('backdrop').onclick=closeSheet;
 
 $('aMinus').onclick=function(){step('a',-1)};
